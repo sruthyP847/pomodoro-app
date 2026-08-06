@@ -8,14 +8,21 @@
     "dev": "tsx watch --env-file-if-exists=../../.env src/index.ts",
     "build": "tsc -b",
     "start": "node dist/index.js",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "postinstall": "prisma generate",
+    "db:migrate": "prisma migrate dev",
+    "db:studio": "prisma studio",
+    "db:generate": "prisma generate"
   },
   "dependencies": {
+    "@prisma/adapter-pg": "^7.9.1",
+    "@prisma/client": "^7.9.1",
     "express": "^5.1.0"
   },
   "devDependencies": {
     "@types/express": "^5.0.3",
     "@types/node": "^24.13.3",
+    "prisma": "^7.9.1",
     "tsx": "^4.20.6",
     "typescript": "~6.0.2"
   }

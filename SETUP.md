@@ -15,6 +15,8 @@ pomodoro-app/
 ├── apps/
 │   ├── web/          React + TypeScript (Vite)
 │   └── api/          Node + Express + TypeScript
+│       ├── prisma/   schema.prisma + migrations
+│       └── src/
 ├── docker-compose.yml
 ├── .env.example
 └── package.json      npm workspaces root
@@ -58,8 +60,9 @@ docker compose down
 `docker compose down` stops the container but keeps your data. To wipe the database
 volume too, use `docker compose down -v`.
 
-> Nothing connects to Postgres yet — there's no schema or DB client in the apps at this
-> stage. The service is here so the rest of the setup is in place.
+The API connects to this database via Prisma using `DATABASE_URL` from `.env`. That value
+is a full connection string and is **not** interpolated from the `POSTGRES_*` vars — if you
+change the user, password, port, or database name, update `DATABASE_URL` to match.
 
 ## 3. Install dependencies
 
@@ -70,7 +73,35 @@ Once, from the repo root. npm workspaces installs both apps together — don't r
 npm install
 ```
 
-## 4. Run the apps
+This also runs `prisma generate` (via the API's `postinstall`), which writes the typed
+Prisma client to `apps/api/src/generated/prisma`. That directory is generated output and is
+gitignored — after a fresh clone you get it from `npm install`.
+
+## 4. Apply database migrations
+
+With Postgres running, from `apps/api`:
+
+```bash
+npm run db:migrate
+```
+
+This applies everything in `apps/api/prisma/migrations` and regenerates the client. On a
+fresh database it creates the `User` and `Session` tables.
+
+After editing `apps/api/prisma/schema.prisma`, create a new migration with:
+
+```bash
+npm run db:migrate -- --name describe_your_change
+```
+
+To inspect the data in a browser:
+
+```bash
+npm run db:studio
+```
+
+## 5. Run the apps
+
 
 The two apps run as separate long-lived processes, so use two terminal tabs.
 
@@ -88,19 +119,26 @@ npm run dev:web
 
 You can also run either app from its own directory with `npm run dev`.
 
-## 5. Verify it works
+## 6. Verify it works
 
 - Open http://localhost:5173 — you should see **"Pomme — web app running"**.
-- Check the API health route:
+- Check the API health route, which also runs a query against Postgres:
 
 ```bash
 curl http://localhost:3001/health
 ```
 
-Expected response:
+Expected response (HTTP 200):
 
 ```json
-{"status":"ok"}
+{"status":"ok","database":"connected"}
+```
+
+If the database is unreachable the same route returns HTTP 503 with the error code, and the
+full error is written to the API's console:
+
+```json
+{"status":"error","database":"disconnected","error":"Database query failed (ECONNREFUSED)"}
 ```
 
 ## Other scripts
@@ -115,6 +153,12 @@ npm run build
 
 - **Port 5432 already in use** — you likely have another Postgres running. Set
   `POSTGRES_PORT` in `.env` to something free (e.g. `5433`) and re-run `docker compose up -d`.
+  Update the port in `DATABASE_URL` to match.
+- **`/health` returns 503 with `ECONNREFUSED`** — Postgres isn't running or `DATABASE_URL`
+  points at the wrong port. Check `docker compose ps`.
+- **`DATABASE_URL is not set`** on API startup — you haven't created `.env`; see step 1.
+- **Prisma client types missing or stale** — run `npm run db:generate` in `apps/api` (this
+  normally happens automatically on `npm install`).
 - **Port 3001 or 5173 in use** — set `PORT` in `.env` for the API; for the web app pass
   `npm run dev:web -- --port 5174`.
 - **Changes to `.env` not picked up** — restart the affected process; Docker Compose reads
