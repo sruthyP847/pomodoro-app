@@ -1,0 +1,13 @@
+{
+  "name": "pomme",
+  "private": true,
+  "version": "0.0.0",
+  "workspaces": [
+    "apps/*"
+  ],
+  "scripts": {
+    "dev:web": "npm run dev --workspace @pomme/web",
+    "dev:api": "npm run dev --workspace @pomme/api",
+    "build": "npm run build --workspaces --if-present"
+  }
+}
