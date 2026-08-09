@@ -24,13 +24,34 @@ pomodoro-app/
 
 ## 1. Environment variables
 
-Copy the example file and adjust if you like. The defaults work as-is for local dev.
+Copy the example file. The Postgres defaults work as-is for local dev; the Clerk keys are
+placeholders you must replace.
 
 ```bash
 cp .env.example .env
 ```
 
-`.env` is gitignored — never commit it.
+`.env` is gitignored — never commit it. There is a **single `.env` at the repo root** for the
+whole monorepo: the API loads it via `--env-file-if-exists=../../.env`, and the web app via
+Vite's `envDir` (set to the repo root in `apps/web/vite.config.ts`). Don't create a
+per-app `.env`.
+
+### Clerk keys
+
+Auth uses [Clerk](https://dashboard.clerk.com). Create an application (or use an existing
+development instance), then copy both keys from **Configure → API keys** into `.env`:
+
+| Variable                     | Where it's used            | Notes                                    |
+| ---------------------------- | -------------------------- | ---------------------------------------- |
+| `CLERK_SECRET_KEY`           | API only                   | `sk_test_…` — secret, never sent to the browser |
+| `VITE_CLERK_PUBLISHABLE_KEY` | Web app **and** API        | `pk_test_…` — safe to expose to the browser |
+
+The publishable key is deliberately shared: Clerk's `clerkMiddleware()` needs it on the
+backend too, and since there's one `.env` we read the same variable in both places rather
+than duplicating the value under a second name. The `VITE_` prefix only controls what Vite
+exposes to client code — it has no meaning to the API.
+
+Both apps fail fast at startup with a clear message if these are missing.
 
 ## 2. Start Postgres
 
@@ -119,9 +140,16 @@ npm run dev:web
 
 You can also run either app from its own directory with `npm run dev`.
 
+The Vite dev server proxies `/api/*` to the API (see `server.proxy` in
+`apps/web/vite.config.ts`), so the browser stays same-origin and no CORS setup is needed.
+Use relative paths like `fetch('/api/me')` from the frontend.
+
 ## 6. Verify it works
 
-- Open http://localhost:5173 — you should see **"Pomme — web app running"**.
+- Open http://localhost:5173. Signed out, you get Clerk's sign-in card; sign up with a test
+  email. Signed in, you see **"Pomme — web app running"** with a user avatar in the header.
+- The app calls `GET /api/me` after sign-in and logs the result to the browser console —
+  that's the auth loop working. The row is created in Postgres on first request.
 - Check the API health route, which also runs a query against Postgres:
 
 ```bash
@@ -159,6 +187,11 @@ npm run build
 - **`DATABASE_URL is not set`** on API startup — you haven't created `.env`; see step 1.
 - **Prisma client types missing or stale** — run `npm run db:generate` in `apps/api` (this
   normally happens automatically on `npm install`).
+- **API exits with `Missing Clerk env var(s)`** — add the Clerk keys to `.env`; see step 1.
+- **Browser console: `VITE_CLERK_PUBLISHABLE_KEY is not set`** — same fix, then restart the
+  Vite dev server (it reads `.env` at startup).
+- **`GET /api/me` returns 401** — the request had no valid session token. Confirm you're
+  signed in; the frontend attaches it via `getToken()`.
 - **Port 3001 or 5173 in use** — set `PORT` in `.env` for the API; for the web app pass
   `npm run dev:web -- --port 5174`.
 - **Changes to `.env` not picked up** — restart the affected process; Docker Compose reads

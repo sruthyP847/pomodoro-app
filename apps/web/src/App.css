@@ -1,5 +1,19 @@
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.75rem 1.25rem;
+  border-bottom: 1px solid color-mix(in srgb, var(--text) 20%, transparent);
+}
+
+.header__brand {
+  font-weight: 600;
+  color: var(--text-h);
+}
+
 .app {
-  min-height: 100dvh;
+  min-height: calc(100dvh - 4rem);
   display: grid;
   place-items: center;
   padding: 2rem;
@@ -9,4 +23,11 @@
   font-size: 1.75rem;
   font-weight: 600;
   color: var(--text-h);
+}
+
+.signin {
+  min-height: 100dvh;
+  display: grid;
+  place-items: center;
+  padding: 2rem;
 }
