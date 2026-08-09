@@ -26,4 +26,7 @@ model Session {
   startedAt DateTime
   endedAt   DateTime?
   completed Boolean   @default(false)
+  /// The phase's configured length, so pauses don't inflate it.
+  /// startedAt/endedAt span wall-clock time and can include paused time.
+  activeDurationMs Int
 }

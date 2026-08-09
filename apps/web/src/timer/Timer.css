@@ -128,7 +128,9 @@
     transform 200ms ease;
 }
 
+/* Always the accent colour, never the phase colour: a filled dot means a
+   completed work session, which doesn't change meaning during a break. */
 .timer__dot[data-filled='true'] {
-  background: var(--phase-color);
+  background: var(--accent);
   transform: scale(1.1);
 }

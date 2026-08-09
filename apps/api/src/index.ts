@@ -3,6 +3,7 @@ import express from 'express'
 
 import { healthRouter } from './routes/health.js'
 import { meRouter } from './routes/me.js'
+import { sessionsRouter } from './routes/sessions.js'
 
 const secretKey = process.env['CLERK_SECRET_KEY']
 
@@ -38,6 +39,7 @@ app.use(healthRouter)
 app.use(clerkMiddleware({ secretKey, publishableKey }))
 
 app.use(meRouter)
+app.use(sessionsRouter)
 
 app.listen(port, () => {
   console.log(`api listening on http://localhost:${port}`)

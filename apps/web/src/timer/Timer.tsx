@@ -1,5 +1,10 @@
+import { useAuth } from '@clerk/clerk-react'
+import { useCallback } from 'react'
+
+import { beep, notify, primeAudio, requestNotificationPermission } from './alerts'
 import { PHASE_LABELS, SESSIONS_BEFORE_LONG_BREAK } from './config'
-import { formatDuration, usePomodoro } from './usePomodoro'
+import { recordSession } from './sessionsApi'
+import { formatDuration, usePomodoro, type Completion } from './usePomodoro'
 
 import './Timer.css'
 
@@ -20,6 +25,18 @@ function PauseIcon() {
 }
 
 export function Timer() {
+  const { getToken } = useAuth()
+
+  const handlePhaseComplete = useCallback(
+    (completion: Completion) => {
+      beep()
+      notify(completion.phase)
+      // Deliberately not awaited: persistence must never gate the transition.
+      void recordSession(completion, getToken)
+    },
+    [getToken],
+  )
+
   const {
     phase,
     status,
@@ -29,7 +46,7 @@ export function Timer() {
     pause,
     resume,
     reset,
-  } = usePomodoro()
+  } = usePomodoro({ onPhaseComplete: handlePhaseComplete })
 
   const isRunning = status === 'running'
   const isBreak = phase !== 'work'
@@ -37,8 +54,20 @@ export function Timer() {
   const primaryLabel =
     status === 'running' ? 'Pause' : status === 'paused' ? 'Resume' : 'Start'
 
-  const onPrimary =
-    status === 'running' ? pause : status === 'paused' ? resume : start
+  const handlePrimary = () => {
+    if (status === 'running') {
+      pause()
+      return
+    }
+
+    // Both on a first Start and on Resume: these need a user gesture, and both
+    // helpers are no-ops once they've already run.
+    primeAudio()
+    requestNotificationPermission()
+
+    if (status === 'paused') resume()
+    else start()
+  }
 
   return (
     <main
@@ -59,7 +88,7 @@ export function Timer() {
         <button
           type="button"
           className="timer__button timer__button--primary"
-          onClick={onPrimary}
+          onClick={handlePrimary}
         >
           {isRunning ? <PauseIcon /> : <PlayIcon />}
           {primaryLabel}
