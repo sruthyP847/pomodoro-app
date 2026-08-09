@@ -1,4 +1,11 @@
+.shell {
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+}
+
 .header {
+  flex: none;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -8,19 +15,6 @@
 }
 
 .header__brand {
-  font-weight: 600;
-  color: var(--text-h);
-}
-
-.app {
-  min-height: calc(100dvh - 4rem);
-  display: grid;
-  place-items: center;
-  padding: 2rem;
-}
-
-.app h1 {
-  font-size: 1.75rem;
   font-weight: 600;
   color: var(--text-h);
 }

@@ -1,0 +1,134 @@
+.timer {
+  /* Phase colour drives the label, primary button and dots together. */
+  --phase-color: var(--accent);
+  --phase-contrast: var(--accent-contrast);
+
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1.5rem;
+  padding: 2rem;
+}
+
+.timer[data-phase='break'] {
+  --phase-color: var(--success);
+  --phase-contrast: var(--success-contrast);
+}
+
+.timer__phase {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--phase-color);
+}
+
+.timer__tag {
+  padding: 0.15em 0.6em;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  color: var(--text);
+  background: color-mix(in srgb, var(--text) 14%, transparent);
+}
+
+.timer__display {
+  font-size: clamp(4.5rem, 18vw, 9rem);
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-h);
+  transition: color 150ms ease;
+}
+
+/* Paused reads as "on hold" rather than active. */
+.timer[data-status='paused'] .timer__display {
+  color: var(--text);
+  opacity: 0.55;
+}
+
+.timer__controls {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.timer__button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.7rem 1.5rem;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  font: inherit;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    background-color 150ms ease,
+    border-color 150ms ease,
+    color 150ms ease;
+}
+
+.timer__button svg {
+  width: 1.1em;
+  height: 1.1em;
+}
+
+.timer__button--primary {
+  min-width: 8.5rem;
+  justify-content: center;
+  color: var(--phase-contrast);
+  background: var(--phase-color);
+}
+
+.timer__button--primary:hover {
+  background: color-mix(in srgb, var(--phase-color) 85%, black);
+}
+
+.timer__button--secondary {
+  color: var(--text);
+  background: transparent;
+  border-color: color-mix(in srgb, var(--text) 30%, transparent);
+}
+
+.timer__button--secondary:hover {
+  color: var(--text-h);
+  border-color: color-mix(in srgb, var(--text) 55%, transparent);
+}
+
+.timer__button:focus-visible {
+  outline: 2px solid var(--phase-color);
+  outline-offset: 3px;
+}
+
+.timer__dots {
+  display: flex;
+  gap: 0.6rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.timer__dot {
+  width: 0.6rem;
+  height: 0.6rem;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--text) 25%, transparent);
+  transition:
+    background-color 200ms ease,
+    transform 200ms ease;
+}
+
+.timer__dot[data-filled='true'] {
+  background: var(--phase-color);
+  transform: scale(1.1);
+}

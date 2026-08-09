@@ -3,6 +3,11 @@
   --text-h: #08060d;
   --bg: #fff;
 
+  --accent: #e0503c;
+  --accent-contrast: #fff;
+  --success: #1e9e63;
+  --success-contrast: #fff;
+
   font: 18px/145% system-ui, 'Segoe UI', Roboto, sans-serif;
   color-scheme: light dark;
   color: var(--text);
@@ -16,6 +21,11 @@
     --text: #b5aebd;
     --text-h: #f5f3f7;
     --bg: #121014;
+
+    --accent: #ff6a53;
+    --accent-contrast: #1a0b08;
+    --success: #3ecb8b;
+    --success-contrast: #05170f;
   }
 }
 

@@ -7,6 +7,8 @@ import {
 } from '@clerk/clerk-react'
 import { useEffect } from 'react'
 
+import { Timer } from './timer/Timer'
+
 import './App.css'
 
 /**
@@ -59,14 +61,14 @@ function App() {
       </SignedOut>
 
       <SignedIn>
-        <header className="header">
-          <span className="header__brand">Pomme</span>
-          <UserButton />
-        </header>
+        <div className="shell">
+          <header className="header">
+            <span className="header__brand">Pomme</span>
+            <UserButton />
+          </header>
 
-        <main className="app">
-          <h1>Pomme — web app running</h1>
-        </main>
+          <Timer />
+        </div>
 
         <MeProbe />
       </SignedIn>
