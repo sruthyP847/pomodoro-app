@@ -12,12 +12,17 @@ interface FormValues {
   sessions: string
 }
 
+/**
+ * Every field starts empty. The familiar 25/5/15/4 numbers appear only as
+ * placeholders, so creating a plan is a deliberate act rather than something
+ * you get by submitting an untouched form.
+ */
 const BLANK: FormValues = {
   name: '',
-  work: '25',
-  break_: '5',
-  longBreak: '15',
-  sessions: '4',
+  work: '',
+  break_: '',
+  longBreak: '',
+  sessions: '',
 }
 
 function planToForm(plan: GamePlan): FormValues {
@@ -111,6 +116,7 @@ function PlanForm({
           type="number"
           min="1"
           step="1"
+          placeholder="25"
           value={values.work}
           onChange={set('work')}
         />
@@ -122,6 +128,7 @@ function PlanForm({
           type="number"
           min="1"
           step="1"
+          placeholder="5"
           value={values.break_}
           onChange={set('break_')}
         />
@@ -133,6 +140,7 @@ function PlanForm({
           type="number"
           min="1"
           step="1"
+          placeholder="15"
           value={values.longBreak}
           onChange={set('longBreak')}
         />
@@ -144,6 +152,7 @@ function PlanForm({
           type="number"
           min="1"
           step="1"
+          placeholder="4"
           value={values.sessions}
           onChange={set('sessions')}
         />
