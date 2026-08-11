@@ -134,3 +134,254 @@
   background: var(--accent);
   transform: scale(1.1);
 }
+
+/* --- Game Plan picker ------------------------------------------------- */
+
+.timer--message {
+  color: var(--text);
+}
+
+.planpicker {
+  position: relative;
+}
+
+.planpicker__pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.3rem 0.85rem;
+  border: 1px solid color-mix(in srgb, var(--text) 28%, transparent);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.planpicker__pill:hover {
+  color: var(--text-h);
+  border-color: color-mix(in srgb, var(--text) 50%, transparent);
+}
+
+.planpicker__chev {
+  width: 1em;
+  height: 1em;
+}
+
+/* Anchored to the pill — this is a popover, not a page. */
+.planpicker__popover {
+  position: absolute;
+  top: calc(100% + 0.5rem);
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 10;
+  width: min(22rem, calc(100vw - 2rem));
+  max-height: min(30rem, calc(100vh - 8rem));
+  overflow-y: auto;
+  padding: 0.75rem;
+  text-align: left;
+  border: 1px solid color-mix(in srgb, var(--text) 22%, transparent);
+  border-radius: 0.85rem;
+  background: var(--bg);
+  box-shadow: 0 16px 40px rgb(0 0 0 / 0.35);
+}
+
+.planpicker__notice,
+.planpicker__error {
+  margin: 0 0 0.6rem;
+  padding: 0.45rem 0.6rem;
+  border-radius: 0.5rem;
+  font-size: 0.8rem;
+  background: color-mix(in srgb, var(--text) 12%, transparent);
+}
+
+.planpicker__error {
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 14%, transparent);
+}
+
+.planlist {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.planlist__item {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.planlist__select {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 0;
+  padding: 0.45rem 0.5rem;
+  border: none;
+  border-radius: 0.5rem;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  font-size: 0.85rem;
+  text-align: left;
+  cursor: pointer;
+}
+
+.planlist__select:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--text) 10%, transparent);
+}
+
+.planlist__select:disabled {
+  cursor: default;
+}
+
+.planlist__select[data-active='true'] {
+  color: var(--text-h);
+}
+
+.planlist__dot {
+  flex: none;
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--text) 30%, transparent);
+}
+
+.planlist__dot[data-active='true'] {
+  background: var(--accent);
+}
+
+.planlist__name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 600;
+}
+
+.planlist__meta {
+  flex: none;
+  font-size: 0.75rem;
+  opacity: 0.65;
+  font-variant-numeric: tabular-nums;
+}
+
+.planlist__icon {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 1.85rem;
+  height: 1.85rem;
+  padding: 0;
+  border: none;
+  border-radius: 0.45rem;
+  background: transparent;
+  color: var(--text);
+  cursor: pointer;
+}
+
+.planlist__icon svg {
+  width: 1.05rem;
+  height: 1.05rem;
+}
+
+.planlist__icon:hover:not(:disabled) {
+  color: var(--text-h);
+  background: color-mix(in srgb, var(--text) 12%, transparent);
+}
+
+.planlist__icon:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.planpicker__new {
+  margin-top: 0.75rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid color-mix(in srgb, var(--text) 18%, transparent);
+}
+
+.planpicker__new-title {
+  margin: 0 0 0.5rem;
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-h);
+}
+
+.planform {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.planform input {
+  padding: 0.35rem 0.5rem;
+  border: 1px solid color-mix(in srgb, var(--text) 25%, transparent);
+  border-radius: 0.4rem;
+  background: transparent;
+  color: var(--text-h);
+  font: inherit;
+  font-size: 0.85rem;
+  min-width: 0;
+}
+
+.planform input:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.planform__grid {
+  display: grid;
+  grid-template-columns: auto 4.5rem auto;
+  align-items: center;
+  gap: 0.35rem 0.5rem;
+  font-size: 0.8rem;
+}
+
+.planform__unit {
+  opacity: 0.6;
+  font-size: 0.75rem;
+}
+
+.planform__problem {
+  margin: 0;
+  font-size: 0.78rem;
+  color: var(--accent);
+}
+
+.planform__actions {
+  display: flex;
+  gap: 0.4rem;
+}
+
+.planform__submit,
+.planform__cancel {
+  padding: 0.4rem 0.9rem;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.planform__submit {
+  color: var(--accent-contrast);
+  background: var(--accent);
+}
+
+.planform__cancel {
+  color: var(--text);
+  background: transparent;
+  border-color: color-mix(in srgb, var(--text) 28%, transparent);
+}

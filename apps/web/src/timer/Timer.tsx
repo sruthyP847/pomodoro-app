@@ -1,9 +1,11 @@
 import { useAuth } from '@clerk/clerk-react'
-import { useCallback } from 'react'
+import { useCallback, useMemo } from 'react'
 
 import { beep, notify, primeAudio, requestNotificationPermission } from './alerts'
-import { PHASE_LABELS, SESSIONS_BEFORE_LONG_BREAK } from './config'
+import { PHASE_LABELS, planToTimerConfig, type TimerConfig } from './config'
+import { GamePlanPicker } from './GamePlanPicker'
 import { recordSession } from './sessionsApi'
+import { useGamePlans } from './useGamePlans'
 import { formatDuration, usePomodoro, type Completion } from './usePomodoro'
 
 import './Timer.css'
@@ -24,7 +26,14 @@ function PauseIcon() {
   )
 }
 
-export function Timer() {
+/** The timer itself, once we know which Game Plan it runs on. */
+function TimerBody({
+  config,
+  plans,
+}: {
+  config: TimerConfig
+  plans: ReturnType<typeof useGamePlans>
+}) {
   const { getToken } = useAuth()
 
   const handlePhaseComplete = useCallback(
@@ -42,11 +51,12 @@ export function Timer() {
     status,
     remainingMs,
     completedWorkSessions,
+    sessionsBeforeLongBreak,
     start,
     pause,
     resume,
     reset,
-  } = usePomodoro({ onPhaseComplete: handlePhaseComplete })
+  } = usePomodoro(config, { onPhaseComplete: handlePhaseComplete })
 
   const isRunning = status === 'running'
   const isBreak = phase !== 'work'
@@ -75,6 +85,13 @@ export function Timer() {
       data-phase={isBreak ? 'break' : 'work'}
       data-status={status}
     >
+      <GamePlanPicker
+        state={plans}
+        // Changing durations mid-phase would invalidate the running countdown.
+        canSwitch={status === 'idle'}
+        switchBlockedReason="Reset the timer to switch Game Plans"
+      />
+
       <p className="timer__phase">
         {PHASE_LABELS[phase]}
         {status === 'paused' && <span className="timer__tag">Paused</span>}
@@ -105,9 +122,9 @@ export function Timer() {
 
       <ol
         className="timer__dots"
-        aria-label={`${completedWorkSessions} of ${SESSIONS_BEFORE_LONG_BREAK} focus sessions complete`}
+        aria-label={`${completedWorkSessions} of ${sessionsBeforeLongBreak} focus sessions complete`}
       >
-        {Array.from({ length: SESSIONS_BEFORE_LONG_BREAK }, (_, index) => (
+        {Array.from({ length: sessionsBeforeLongBreak }, (_, index) => (
           <li
             key={index}
             className="timer__dot"
@@ -117,4 +134,35 @@ export function Timer() {
       </ol>
     </main>
   )
+}
+
+export function Timer() {
+  const { getToken } = useAuth()
+  const plans = useGamePlans(getToken)
+  const { activePlan } = plans
+
+  // Memoised so the timer only re-configures when the plan's values change.
+  const config = useMemo(
+    () => (activePlan ? planToTimerConfig(activePlan) : null),
+    [activePlan],
+  )
+
+  if (plans.loading) {
+    return (
+      <main className="timer timer--message">
+        <p>Loading your Game Plan…</p>
+      </main>
+    )
+  }
+
+  // No hardcoded fallback: the active plan is the source of truth.
+  if (!config) {
+    return (
+      <main className="timer timer--message">
+        <p>{plans.error ?? 'No Game Plan available.'}</p>
+      </main>
+    )
+  }
+
+  return <TimerBody config={config} plans={plans} />
 }

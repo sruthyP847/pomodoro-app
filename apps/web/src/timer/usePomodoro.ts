@@ -1,11 +1,6 @@
 import { useEffect, useReducer, useRef } from 'react'
 
-import {
-  DURATIONS_MS,
-  SESSIONS_BEFORE_LONG_BREAK,
-  type Phase,
-  type Status,
-} from './config'
+import { type Phase, type Status, type TimerConfig } from './config'
 
 /** How often we recompute the display. Not what drives accuracy — see below. */
 const TICK_MS = 200
@@ -18,9 +13,13 @@ export interface Completion {
   next: Phase
   startedAt: number
   endedAt: number
+  /** The phase's configured length, unaffected by pauses. */
+  activeDurationMs: number
 }
 
 interface State {
+  /** Durations come from the active Game Plan, never from a constant. */
+  config: TimerConfig
   phase: Phase
   status: Status
   /**
@@ -49,14 +48,16 @@ type Action =
   | { type: 'PAUSE' }
   | { type: 'RESUME' }
   | { type: 'RESET' }
+  | { type: 'SET_CONFIG'; config: TimerConfig }
   | { type: 'TICK'; now: number }
 
-function idleState(now: number): State {
+function idleState(now: number, config: TimerConfig): State {
   return {
+    config,
     phase: 'work',
     status: 'idle',
     endsAt: null,
-    restingRemainingMs: DURATIONS_MS.work,
+    restingRemainingMs: config.durations.work,
     phaseStartedAt: null,
     completedWorkSessions: 0,
     completions: [],
@@ -65,12 +66,21 @@ function idleState(now: number): State {
   }
 }
 
+function sameConfig(a: TimerConfig, b: TimerConfig): boolean {
+  return (
+    a.durations.work === b.durations.work &&
+    a.durations.shortBreak === b.durations.shortBreak &&
+    a.durations.longBreak === b.durations.longBreak &&
+    a.sessionsBeforeLongBreak === b.sessionsBeforeLongBreak
+  )
+}
+
 /** Which phase follows the one that just finished, and the updated dot count. */
 function advance(state: State): Pick<State, 'phase' | 'completedWorkSessions'> {
   if (state.phase === 'work') {
     const completedWorkSessions = state.completedWorkSessions + 1
     const earnedLongBreak =
-      completedWorkSessions % SESSIONS_BEFORE_LONG_BREAK === 0
+      completedWorkSessions % state.config.sessionsBeforeLongBreak === 0
 
     return {
       phase: earnedLongBreak ? 'longBreak' : 'shortBreak',
@@ -128,7 +138,19 @@ function reducer(state: State, action: Action): State {
     case 'RESET': {
       // Completions are append-only, so an in-flight phase is simply dropped:
       // abandoned sessions are not recorded.
-      const fresh = idleState(Date.now())
+      const fresh = idleState(Date.now(), state.config)
+      return {
+        ...fresh,
+        completions: state.completions,
+        nextCompletionId: state.nextCompletionId,
+      }
+    }
+
+    case 'SET_CONFIG': {
+      // Identity churn from the caller is common; only act on real changes.
+      if (sameConfig(state.config, action.config)) return state
+
+      const fresh = idleState(Date.now(), action.config)
       return {
         ...fresh,
         completions: state.completions,
@@ -154,7 +176,7 @@ function reducer(state: State, action: Action): State {
       // away for longer than a single phase and we have no idea how much of any
       // of it the user was actually present for. Don't invent completions —
       // including for this first phase — and fall back to a clean slate.
-      if (now >= finishedAt + DURATIONS_MS[phase]) {
+      if (now >= finishedAt + state.config.durations[phase]) {
         return reducer(state, { type: 'RESET' })
       }
 
@@ -165,8 +187,10 @@ function reducer(state: State, action: Action): State {
         phase: finishedPhase,
         next: phase,
         startedAt:
-          state.phaseStartedAt ?? finishedAt - DURATIONS_MS[finishedPhase],
+          state.phaseStartedAt ??
+          finishedAt - state.config.durations[finishedPhase],
         endedAt: finishedAt,
+        activeDurationMs: state.config.durations[finishedPhase],
       }
 
       return {
@@ -176,8 +200,8 @@ function reducer(state: State, action: Action): State {
         completedWorkSessions,
         // Auto-start the next phase; no confirmation step.
         status: 'running',
-        endsAt: finishedAt + DURATIONS_MS[phase],
-        restingRemainingMs: DURATIONS_MS[phase],
+        endsAt: finishedAt + state.config.durations[phase],
+        restingRemainingMs: state.config.durations[phase],
         phaseStartedAt: finishedAt,
         completions: [...state.completions, completion],
         nextCompletionId: state.nextCompletionId + 1,
@@ -196,14 +220,26 @@ export interface Pomodoro {
   status: Status
   remainingMs: number
   completedWorkSessions: number
+  sessionsBeforeLongBreak: number
   start: () => void
   pause: () => void
   resume: () => void
   reset: () => void
 }
 
-export function usePomodoro(options: UsePomodoroOptions = {}): Pomodoro {
-  const [state, dispatch] = useReducer(reducer, Date.now(), idleState)
+export function usePomodoro(
+  config: TimerConfig,
+  options: UsePomodoroOptions = {},
+): Pomodoro {
+  const [state, dispatch] = useReducer(reducer, { now: Date.now(), config }, (
+    init,
+  ) => idleState(init.now, init.config))
+
+  // Adopt a new active Game Plan. The reducer ignores no-op changes, so this
+  // is safe to run on every render.
+  useEffect(() => {
+    dispatch({ type: 'SET_CONFIG', config })
+  }, [config])
 
   // Kept in a ref so a new callback identity each render doesn't re-run the
   // drain effect (and so the effect never sees a stale closure).
@@ -253,6 +289,7 @@ export function usePomodoro(options: UsePomodoroOptions = {}): Pomodoro {
     status: state.status,
     remainingMs,
     completedWorkSessions: state.completedWorkSessions,
+    sessionsBeforeLongBreak: state.config.sessionsBeforeLongBreak,
     start: () => dispatch({ type: 'START' }),
     pause: () => dispatch({ type: 'PAUSE' }),
     resume: () => dispatch({ type: 'RESUME' }),

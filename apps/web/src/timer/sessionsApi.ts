@@ -1,4 +1,4 @@
-import { DURATIONS_MS, type Phase } from './config'
+import { type Phase } from './config'
 import { type Completion } from './usePomodoro'
 
 /** Phase names as the API stores them. */
@@ -29,10 +29,10 @@ export async function recordSession(
         type: API_TYPE[completion.phase],
         startedAt: new Date(completion.startedAt).toISOString(),
         endedAt: new Date(completion.endedAt).toISOString(),
-        // The configured length for this phase type, read straight from
-        // config — deliberately not derived from endedAt - startedAt, which
-        // includes any time spent paused.
-        activeDurationMs: DURATIONS_MS[completion.phase],
+        // The active Game Plan's configured length for this phase, captured
+        // when it completed — deliberately not derived from
+        // endedAt - startedAt, which includes any time spent paused.
+        activeDurationMs: completion.activeDurationMs,
       }),
     })
 

@@ -11,10 +11,59 @@ export class MissingEmailError extends Error {
   }
 }
 
+/** Every user starts with this plan until they make their own. */
+export const DEFAULT_GAME_PLAN = {
+  name: 'Classic 25/5',
+  workDurationMs: 1_500_000,
+  breakDurationMs: 300_000,
+  longBreakDurationMs: 900_000,
+  sessionsBeforeLongBreak: 4,
+} as const
+
 export interface ResolvedUser {
   user: User
   /** True when this call was the one that created the row. */
   created: boolean
+}
+
+/**
+ * Guarantees the user has at least one GamePlan and an active one selected.
+ * Runs on the same lazy-sync path as User creation rather than as a one-off
+ * backfill, so users who predate Game Plans get theirs on next request.
+ */
+async function ensureGamePlan(user: User): Promise<User> {
+  const existingCount = await prisma.gamePlan.count({
+    where: { userId: user.id },
+  })
+
+  if (existingCount === 0) {
+    const plan = await prisma.gamePlan.create({
+      data: { ...DEFAULT_GAME_PLAN, userId: user.id },
+    })
+
+    return prisma.user.update({
+      where: { id: user.id },
+      data: { activeGamePlanId: plan.id },
+    })
+  }
+
+  if (user.activeGamePlanId === null) {
+    // Plans exist but none is active — nothing should produce this, but the
+    // timer has no durations without one, so fall back to the oldest plan.
+    const oldest = await prisma.gamePlan.findFirst({
+      where: { userId: user.id },
+      orderBy: { createdAt: 'asc' },
+    })
+
+    if (oldest) {
+      return prisma.user.update({
+        where: { id: user.id },
+        data: { activeGamePlanId: oldest.id },
+      })
+    }
+  }
+
+  return user
 }
 
 /**
@@ -25,7 +74,9 @@ export interface ResolvedUser {
 export async function resolveUser(clerkUserId: string): Promise<ResolvedUser> {
   const existing = await prisma.user.findUnique({ where: { clerkUserId } })
 
-  if (existing) return { user: existing, created: false }
+  if (existing) {
+    return { user: await ensureGamePlan(existing), created: false }
+  }
 
   const clerkUser = await clerkClient.users.getUser(clerkUserId)
   const email =
@@ -42,5 +93,5 @@ export async function resolveUser(clerkUserId: string): Promise<ResolvedUser> {
     create: { clerkUserId, email },
   })
 
-  return { user, created: true }
+  return { user: await ensureGamePlan(user), created: true }
 }
