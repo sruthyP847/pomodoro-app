@@ -22,6 +22,12 @@ model User {
   /// before its default plan is created by the lazy sync.
   activeGamePlanId String?
   activeGamePlan   GamePlan? @relation("ActiveGamePlan", fields: [activeGamePlanId], references: [id])
+
+  tasks Task[] @relation("UserTasks")
+
+  /// The task the timer is currently working toward, if any.
+  activeTaskId String?
+  activeTask   Task?   @relation("ActiveTask", fields: [activeTaskId], references: [id])
 }
 
 /// A named, reusable set of timer durations.
@@ -51,4 +57,26 @@ model Session {
   /// The phase's configured length, so pauses don't inflate it.
   /// startedAt/endedAt span wall-clock time and can include paused time.
   activeDurationMs Int
+
+  /// The task this session counted toward, if one was active at the time.
+  taskId String?
+  task   Task?   @relation(fields: [taskId], references: [id])
+}
+
+/// A unit of work the user is tracking sessions against.
+model Task {
+  id               String    @id @default(uuid())
+  userId           String
+  user             User      @relation("UserTasks", fields: [userId], references: [id])
+  name             String
+  estimatedMinutes Int
+  completed        Boolean   @default(false)
+  createdAt        DateTime  @default(now())
+
+  /// Sessions logged against this task. Actual time spent is always summed
+  /// from these live, never stored on the task.
+  sessions Session[]
+
+  /// Back-reference for the activeTask relation.
+  activeForUsers User[] @relation("ActiveTask")
 }

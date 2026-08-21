@@ -5,7 +5,9 @@ import { beep, notify, primeAudio, requestNotificationPermission } from './alert
 import { PHASE_LABELS, planToTimerConfig, type TimerConfig } from './config'
 import { GamePlanPicker } from './GamePlanPicker'
 import { recordSession } from './sessionsApi'
+import { TaskPicker } from './TaskPicker'
 import { useGamePlans } from './useGamePlans'
+import { useTasks } from './useTasks'
 import { formatDuration, usePomodoro, type Completion } from './usePomodoro'
 
 import './Timer.css'
@@ -30,20 +32,27 @@ function PauseIcon() {
 function TimerBody({
   config,
   plans,
+  tasks,
 }: {
   config: TimerConfig
   plans: ReturnType<typeof useGamePlans>
+  tasks: ReturnType<typeof useTasks>
 }) {
   const { getToken } = useAuth()
+  const refreshTasks = tasks.refresh
 
   const handlePhaseComplete = useCallback(
     (completion: Completion) => {
       beep()
       notify(completion.phase)
       // Deliberately not awaited: persistence must never gate the transition.
-      void recordSession(completion, getToken)
+      void recordSession(completion, getToken).then(() => {
+        // The server attributes work sessions to the active task, so re-read
+        // to pick up the new actualMs.
+        if (completion.phase === 'work') void refreshTasks()
+      })
     },
-    [getToken],
+    [getToken, refreshTasks],
   )
 
   const {
@@ -85,6 +94,14 @@ function TimerBody({
       data-phase={isBreak ? 'break' : 'work'}
       data-status={status}
     >
+      <TaskPicker
+        state={tasks}
+        // Pomodoro counts are relative to the active plan's work duration.
+        workDurationMs={config.durations.work}
+        canSwitch={status === 'idle'}
+        switchBlockedReason="Reset the timer to switch tasks"
+      />
+
       <GamePlanPicker
         state={plans}
         // Changing durations mid-phase would invalidate the running countdown.
@@ -139,6 +156,7 @@ function TimerBody({
 export function Timer() {
   const { getToken } = useAuth()
   const plans = useGamePlans(getToken)
+  const tasks = useTasks(getToken)
   const { activePlan } = plans
 
   // Memoised so the timer only re-configures when the plan's values change.
@@ -164,5 +182,5 @@ export function Timer() {
     )
   }
 
-  return <TimerBody config={config} plans={plans} />
+  return <TimerBody config={config} plans={plans} tasks={tasks} />
 }

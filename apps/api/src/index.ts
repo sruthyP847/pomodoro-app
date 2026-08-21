@@ -5,6 +5,7 @@ import { gamePlansRouter } from './routes/gamePlans.js'
 import { healthRouter } from './routes/health.js'
 import { meRouter } from './routes/me.js'
 import { sessionsRouter } from './routes/sessions.js'
+import { tasksRouter } from './routes/tasks.js'
 
 const secretKey = process.env['CLERK_SECRET_KEY']
 
@@ -42,6 +43,7 @@ app.use(clerkMiddleware({ secretKey, publishableKey }))
 app.use(meRouter)
 app.use(sessionsRouter)
 app.use(gamePlansRouter)
+app.use(tasksRouter)
 
 app.listen(port, () => {
   console.log(`api listening on http://localhost:${port}`)
