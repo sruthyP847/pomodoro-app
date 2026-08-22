@@ -28,6 +28,13 @@ model User {
   /// The task the timer is currently working toward, if any.
   activeTaskId String?
   activeTask   Task?   @relation("ActiveTask", fields: [activeTaskId], references: [id])
+
+  workBlocks WorkBlock[] @relation("UserWorkBlocks")
+
+  /// The sitting currently in progress. Only this block is reachable; older
+  /// open blocks stay open but unreferenced.
+  activeWorkBlockId String?
+  activeWorkBlock   WorkBlock? @relation("ActiveWorkBlock", fields: [activeWorkBlockId], references: [id])
 }
 
 /// A named, reusable set of timer durations.
@@ -61,6 +68,11 @@ model Session {
   /// The task this session counted toward, if one was active at the time.
   taskId String?
   task   Task?   @relation(fields: [taskId], references: [id])
+
+  /// The sitting this session ran inside, if any. Null for plain and
+  /// Quick-Start-plus-Task sessions run outside a block.
+  workBlockId String?
+  workBlock   WorkBlock? @relation(fields: [workBlockId], references: [id])
 }
 
 /// A unit of work the user is tracking sessions against.
@@ -79,4 +91,38 @@ model Task {
 
   /// Back-reference for the activeTask relation.
   activeForUsers User[] @relation("ActiveTask")
+
+  /// Blocks this task has been attached to, across all sittings.
+  workBlocks WorkBlockTask[]
+}
+
+/// A named sitting that groups tasks and sessions. Entirely optional — the
+/// standalone task flow works with no block at all.
+model WorkBlock {
+  id        String    @id @default(uuid())
+  userId    String
+  user      User      @relation("UserWorkBlocks", fields: [userId], references: [id])
+  name      String
+  startedAt DateTime
+  /// Null means still open. Only Finish sets this.
+  endedAt   DateTime?
+  createdAt DateTime  @default(now())
+
+  tasks    WorkBlockTask[]
+  sessions Session[]
+
+  /// Back-reference for the activeWorkBlock relation.
+  activeForUsers User[] @relation("ActiveWorkBlock")
+}
+
+/// Join row: a task can belong to many blocks over time, and progress is
+/// always summed across every session regardless of which block it ran under.
+model WorkBlockTask {
+  id          String    @id @default(uuid())
+  workBlockId String
+  workBlock   WorkBlock @relation(fields: [workBlockId], references: [id], onDelete: Cascade)
+  taskId      String
+  task        Task      @relation(fields: [taskId], references: [id], onDelete: Cascade)
+
+  @@unique([workBlockId, taskId])
 }

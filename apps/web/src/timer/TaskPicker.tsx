@@ -3,6 +3,21 @@ import { useEffect, useId, useRef, useState } from 'react'
 import { MS_PER_MINUTE } from './config'
 import { type Task, type TaskInput } from './tasksApi'
 import { type TasksState } from './useTasks'
+import { type BlockTask } from './workBlocksApi'
+
+/**
+ * When a block is active the picker scopes to that block's tasks and routes
+ * additions through the block endpoint. Absent, it behaves exactly as the
+ * standalone task flow always has.
+ */
+export interface BlockScope {
+  name: string
+  tasks: BlockTask[]
+  /** Backlog tasks not already attached, offered for one-click adding. */
+  available: Task[]
+  addExisting: (taskId: string) => Promise<void>
+  addNew: (input: TaskInput) => Promise<void>
+}
 
 /**
  * Pomodoro counts are derived from time against the *current* Game Plan, so
@@ -122,11 +137,13 @@ export function TaskPicker({
   workDurationMs,
   canSwitch,
   switchBlockedReason,
+  blockScope = null,
 }: {
   state: TasksState
   workDurationMs: number
   canSwitch: boolean
   switchBlockedReason: string
+  blockScope?: BlockScope | null
 }) {
   const [open, setOpen] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
@@ -151,7 +168,11 @@ export function TaskPicker({
     }
   }, [open])
 
-  const { tasks, activeTask } = state
+  const { activeTask } = state
+  // Inside a block the list is the block's tasks, not the whole backlog.
+  const tasks: Task[] = blockScope ? blockScope.tasks : state.tasks
+  const alsoOpenInFor = (taskId: string): string[] =>
+    blockScope?.tasks.find((task) => task.id === taskId)?.alsoOpenIn ?? []
 
   const initialFor = (task: Task): FormValues => ({
     name: task.name,
@@ -245,7 +266,14 @@ export function TaskPicker({
                         onClick={() => void state.activate(task.id)}
                       >
                         <span className="tasklist__dot" data-active={isActive} />
-                        <span className="tasklist__name">{task.name}</span>
+                        <span className="tasklist__text">
+                          <span className="tasklist__name">{task.name}</span>
+                          {alsoOpenInFor(task.id).length > 0 && (
+                            <span className="tasklist__alsoopen">
+                              Also open in: {alsoOpenInFor(task.id).join(', ')}
+                            </span>
+                          )}
+                        </span>
                         {/* Minutes here, deliberately — pomodoros only on the pill. */}
                         <span className="tasklist__meta">
                           {Math.round(task.actualMs / MS_PER_MINUTE)} of{' '}
@@ -317,12 +345,38 @@ export function TaskPicker({
             })}
           </ul>
 
+          {blockScope && blockScope.available.length > 0 && (
+            <div className="taskpicker__new">
+              <h3 className="taskpicker__new-title">Add from backlog</h3>
+              <ul className="backloglist">
+                {blockScope.available.map((task) => (
+                  <li key={task.id} className="backloglist__item">
+                    <span className="backloglist__name">{task.name}</span>
+                    <button
+                      type="button"
+                      className="backloglist__add"
+                      disabled={!canSwitch}
+                      title={!canSwitch ? switchBlockedReason : undefined}
+                      onClick={() => void blockScope.addExisting(task.id)}
+                    >
+                      Add
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
           <div className="taskpicker__new">
-            <h3 className="taskpicker__new-title">Add a task</h3>
+            <h3 className="taskpicker__new-title">
+              {blockScope ? `Add a task to ${blockScope.name}` : 'Add a task'}
+            </h3>
             <TaskForm
               initial={BLANK}
               submitLabel="Add"
-              onSubmit={(input) => void state.create(input)}
+              onSubmit={(input) =>
+                void (blockScope ? blockScope.addNew(input) : state.create(input))
+              }
             />
           </div>
         </div>

@@ -5,10 +5,12 @@ import { beep, notify, primeAudio, requestNotificationPermission } from './alert
 import { PHASE_LABELS, planToTimerConfig, type TimerConfig } from './config'
 import { GamePlanPicker } from './GamePlanPicker'
 import { recordSession } from './sessionsApi'
-import { TaskPicker } from './TaskPicker'
+import { TaskPicker, type BlockScope } from './TaskPicker'
 import { useGamePlans } from './useGamePlans'
 import { useTasks } from './useTasks'
+import { useWorkBlock } from './useWorkBlock'
 import { formatDuration, usePomodoro, type Completion } from './usePomodoro'
+import { WorkBlockBar } from './WorkBlockBar'
 
 import './Timer.css'
 
@@ -33,13 +35,16 @@ function TimerBody({
   config,
   plans,
   tasks,
+  workBlock,
 }: {
   config: TimerConfig
   plans: ReturnType<typeof useGamePlans>
   tasks: ReturnType<typeof useTasks>
+  workBlock: ReturnType<typeof useWorkBlock>
 }) {
   const { getToken } = useAuth()
   const refreshTasks = tasks.refresh
+  const refreshBlock = workBlock.refresh
 
   const handlePhaseComplete = useCallback(
     (completion: Completion) => {
@@ -49,10 +54,13 @@ function TimerBody({
       void recordSession(completion, getToken).then(() => {
         // The server attributes work sessions to the active task, so re-read
         // to pick up the new actualMs.
-        if (completion.phase === 'work') void refreshTasks()
+        if (completion.phase === 'work') {
+          void refreshTasks()
+          void refreshBlock()
+        }
       })
     },
-    [getToken, refreshTasks],
+    [getToken, refreshTasks, refreshBlock],
   )
 
   const {
@@ -69,6 +77,33 @@ function TimerBody({
 
   const isRunning = status === 'running'
   const isBreak = phase !== 'work'
+
+  // Block work is allowed during a break as well as when fully idle — only a
+  // running or paused *work* phase locks it.
+  const canManageBlock = status === 'idle' || isBreak
+  const blockLockReason = 'Finish the focus session to change your Work Block'
+
+  const activeBlock = workBlock.block
+
+  // Inside a block the task picker scopes to that block; without one the
+  // standalone flow is untouched, including its idle-only switching rule.
+  const blockScope: BlockScope | null = activeBlock
+    ? {
+        name: activeBlock.name,
+        tasks: activeBlock.tasks,
+        available: tasks.tasks.filter(
+          (task) => !activeBlock.tasks.some((inBlock) => inBlock.id === task.id),
+        ),
+        addExisting: async (taskId: string) => {
+          await workBlock.addExisting(taskId)
+          await refreshTasks()
+        },
+        addNew: async (input) => {
+          await workBlock.addNew(input.name, input.estimatedMinutes)
+          await refreshTasks()
+        },
+      }
+    : null
 
   const primaryLabel =
     status === 'running' ? 'Pause' : status === 'paused' ? 'Resume' : 'Start'
@@ -94,12 +129,23 @@ function TimerBody({
       data-phase={isBreak ? 'break' : 'work'}
       data-status={status}
     >
+      <WorkBlockBar
+        state={workBlock}
+        backlog={tasks.tasks}
+        canManage={canManageBlock}
+        blockedReason={blockLockReason}
+        onCreated={() => void refreshTasks()}
+      />
+
       <TaskPicker
         state={tasks}
         // Pomodoro counts are relative to the active plan's work duration.
         workDurationMs={config.durations.work}
-        canSwitch={status === 'idle'}
-        switchBlockedReason="Reset the timer to switch tasks"
+        canSwitch={activeBlock ? canManageBlock : status === 'idle'}
+        switchBlockedReason={
+          activeBlock ? blockLockReason : 'Reset the timer to switch tasks'
+        }
+        blockScope={blockScope}
       />
 
       <GamePlanPicker
@@ -157,6 +203,7 @@ export function Timer() {
   const { getToken } = useAuth()
   const plans = useGamePlans(getToken)
   const tasks = useTasks(getToken)
+  const workBlock = useWorkBlock(getToken)
   const { activePlan } = plans
 
   // Memoised so the timer only re-configures when the plan's values change.
@@ -182,5 +229,12 @@ export function Timer() {
     )
   }
 
-  return <TimerBody config={config} plans={plans} tasks={tasks} />
+  return (
+    <TimerBody
+      config={config}
+      plans={plans}
+      tasks={tasks}
+      workBlock={workBlock}
+    />
+  )
 }

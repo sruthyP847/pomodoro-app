@@ -659,3 +659,300 @@
   background: transparent;
   border-color: color-mix(in srgb, var(--text) 28%, transparent);
 }
+
+/* --- Work Block ------------------------------------------------------- */
+
+.workblock {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+/* Deliberately quiet: people who never use blocks should barely notice it. */
+.workblock__entry {
+  padding: 0.15rem 0.25rem;
+  border: none;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  font-size: 0.8rem;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+  opacity: 0.75;
+}
+
+.workblock__entry:hover:not(:disabled) {
+  color: var(--text-h);
+  opacity: 1;
+}
+
+.workblock__entry:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.workblock__banner {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.3rem 0.5rem 0.3rem 0.9rem;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--text) 14%, transparent);
+  border: 1px solid color-mix(in srgb, var(--text) 22%, transparent);
+  font-size: 0.8rem;
+}
+
+.workblock__label {
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-size: 0.68rem;
+  opacity: 0.7;
+}
+
+.workblock__name {
+  font-weight: 600;
+  color: var(--text-h);
+  max-width: 16rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.workblock__finish {
+  border: none;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+  padding: 0.1rem 0.35rem;
+}
+
+.workblock__finish:hover:not(:disabled) {
+  color: var(--text-h);
+}
+
+.workblock__finish:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.workblock__popover {
+  position: absolute;
+  top: calc(100% + 0.5rem);
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 12;
+  width: min(24rem, calc(100vw - 2rem));
+  max-height: min(30rem, calc(100vh - 8rem));
+  overflow-y: auto;
+  padding: 0.75rem;
+  text-align: left;
+  border: 1px solid color-mix(in srgb, var(--text) 22%, transparent);
+  border-radius: 0.85rem;
+  background: var(--bg);
+  box-shadow: 0 16px 40px rgb(0 0 0 / 0.35);
+}
+
+.workblock__notice,
+.workblock__error,
+.workblock__problem {
+  margin: 0 0 0.6rem;
+  padding: 0.45rem 0.6rem;
+  border-radius: 0.5rem;
+  font-size: 0.8rem;
+  background: color-mix(in srgb, var(--text) 12%, transparent);
+}
+
+.workblock__error,
+.workblock__problem {
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 14%, transparent);
+}
+
+.workblock__nameinput,
+.workblock__newtask input {
+  width: 100%;
+  padding: 0.35rem 0.5rem;
+  border: 1px solid color-mix(in srgb, var(--text) 25%, transparent);
+  border-radius: 0.4rem;
+  background: transparent;
+  color: var(--text-h);
+  font: inherit;
+  font-size: 0.85rem;
+  min-width: 0;
+}
+
+.workblock__section {
+  margin: 0.75rem 0 0.4rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-h);
+}
+
+.workblock__empty {
+  margin: 0;
+  font-size: 0.8rem;
+  opacity: 0.65;
+}
+
+.workblock__tasks {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.workblock__check {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.3rem 0.35rem;
+  border-radius: 0.4rem;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.workblock__check:hover {
+  background: color-mix(in srgb, var(--text) 10%, transparent);
+}
+
+.workblock__checkname {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.workblock__checkmeta {
+  flex: none;
+  font-size: 0.75rem;
+  opacity: 0.6;
+  font-variant-numeric: tabular-nums;
+}
+
+.workblock__newtask {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.workblock__newrow {
+  display: grid;
+  grid-template-columns: auto 5rem auto;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.8rem;
+}
+
+.workblock__unit {
+  opacity: 0.6;
+  font-size: 0.75rem;
+}
+
+.workblock__actions {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin-top: 0.75rem;
+}
+
+.workblock__start {
+  padding: 0.4rem 1.1rem;
+  border-radius: 999px;
+  border: none;
+  color: var(--accent-contrast);
+  background: var(--accent);
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.workblock__start:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.workblock__hint {
+  font-size: 0.75rem;
+  opacity: 0.6;
+}
+
+/* Task rows gain a second line for the cross-block note. */
+.tasklist__text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+}
+
+.tasklist__alsoopen {
+  font-size: 0.7rem;
+  opacity: 0.6;
+  font-weight: 400;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.backloglist {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.backloglist__item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.25rem 0.35rem;
+  font-size: 0.82rem;
+}
+
+.backloglist__name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.backloglist__add {
+  flex: none;
+  padding: 0.2rem 0.7rem;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--text) 28%, transparent);
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.backloglist__add:hover:not(:disabled) {
+  color: var(--text-h);
+  border-color: color-mix(in srgb, var(--text) 55%, transparent);
+}
+
+.backloglist__add:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}

@@ -91,6 +91,8 @@ sessionsRouter.post('/api/sessions', async (req, res) => {
         // Only work counts toward a task; breaks stay unattributed. Taken
         // from the server's view of the active task, not the client's.
         taskId: parsed.type === 'work' ? user.activeTaskId : null,
+        // Every session inside a sitting belongs to it, breaks included.
+        workBlockId: user.activeWorkBlockId,
       },
     })
 
