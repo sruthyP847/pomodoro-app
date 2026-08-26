@@ -33,6 +33,7 @@ export async function recordSession(
         // when it completed — deliberately not derived from
         // endedAt - startedAt, which includes any time spent paused.
         activeDurationMs: completion.activeDurationMs,
+        completed: completion.completed,
       }),
     })
 

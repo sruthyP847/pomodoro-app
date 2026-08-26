@@ -71,8 +71,8 @@ async function requireUser(req: Request, res: Response) {
 }
 
 /**
- * Time actually spent per task: the sum of activeDurationMs over completed
- * work sessions. Computed live on every read, never stored on the Task.
+ * Time actually spent per task: the sum of activeDurationMs over every work
+ * session, finished or abandoned. Computed live on every read, never stored.
  */
 async function actualMsByTask(
   taskIds: string[],
@@ -81,7 +81,9 @@ async function actualMsByTask(
 
   const rows = await prisma.session.groupBy({
     by: ['taskId'],
-    where: { taskId: { in: taskIds }, type: 'work', completed: true },
+    // No completed filter: partial time from an abandoned session still
+    // counts toward the task.
+    where: { taskId: { in: taskIds }, type: 'work' },
     _sum: { activeDurationMs: true },
   })
 

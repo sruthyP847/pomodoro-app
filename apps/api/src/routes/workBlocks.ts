@@ -32,8 +32,8 @@ async function requireUser(req: Request, res: Response) {
 }
 
 /**
- * Actual time per task: summed from every completed work session linked to it,
- * regardless of which block those sessions ran under. Blocks never partition
+ * Actual time per task: summed from every work session linked to it, finished
+ * or abandoned, regardless of which block it ran under. Blocks never partition
  * progress.
  */
 async function actualMsByTask(taskIds: string[]): Promise<Map<string, number>> {
@@ -41,7 +41,9 @@ async function actualMsByTask(taskIds: string[]): Promise<Map<string, number>> {
 
   const rows = await prisma.session.groupBy({
     by: ['taskId'],
-    where: { taskId: { in: taskIds }, type: 'work', completed: true },
+    // No completed filter: partial time from an abandoned session still
+    // counts toward the task.
+    where: { taskId: { in: taskIds }, type: 'work' },
     _sum: { activeDurationMs: true },
   })
 

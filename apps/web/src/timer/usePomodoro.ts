@@ -5,7 +5,7 @@ import { type Phase, type Status, type TimerConfig } from './config'
 /** How often we recompute the display. Not what drives accuracy — see below. */
 const TICK_MS = 200
 
-/** A phase that ran to completion. Emitted once, never for a Reset. */
+/** A phase that ended — either run to completion or cut short by Reset. */
 export interface Completion {
   id: number
   phase: Phase
@@ -13,8 +13,13 @@ export interface Completion {
   next: Phase
   startedAt: number
   endedAt: number
-  /** The phase's configured length, unaffected by pauses. */
+  /**
+   * For a finished phase, its configured length. For an abandoned one, the
+   * active time actually elapsed. Excludes paused time either way.
+   */
   activeDurationMs: number
+  /** False when a manual Reset cut the phase short. */
+  completed: boolean
 }
 
 interface State {
@@ -47,7 +52,11 @@ type Action =
   | { type: 'START' }
   | { type: 'PAUSE' }
   | { type: 'RESUME' }
-  | { type: 'RESET' }
+  /**
+   * `manual` is the Reset button; `abandonment` is the multi-phase-gap path.
+   * The state transition is identical — only manual can log a partial row.
+   */
+  | { type: 'RESET'; reason: 'manual' | 'abandonment' }
   | { type: 'SET_CONFIG'; config: TimerConfig }
   | { type: 'TICK'; now: number }
 
@@ -136,13 +145,46 @@ function reducer(state: State, action: Action): State {
     }
 
     case 'RESET': {
-      // Completions are append-only, so an in-flight phase is simply dropped:
-      // abandoned sessions are not recorded.
-      const fresh = idleState(Date.now(), state.config)
-      return {
+      const now = Date.now()
+      const fresh = idleState(now, state.config)
+      const carried = {
         ...fresh,
         completions: state.completions,
         nextCompletionId: state.nextCompletionId,
+      }
+
+      // Idle has nothing to abandon, and the backgrounded-tab path stays
+      // silent by design.
+      const wasInProgress =
+        state.status === 'running' || state.status === 'paused'
+      if (action.reason !== 'manual' || !wasInProgress) return carried
+
+      // Remaining excludes paused time, so duration minus it is the time
+      // actually spent on this phase — not the full configured duration.
+      const remainingMs =
+        state.status === 'running' && state.endsAt !== null
+          ? Math.max(0, state.endsAt - now)
+          : state.restingRemainingMs
+      const elapsedMs = state.config.durations[state.phase] - remainingMs
+
+      // Reset in the same instant as Start isn't worth a row.
+      if (elapsedMs <= 0) return carried
+
+      const abandoned: Completion = {
+        id: state.nextCompletionId,
+        phase: state.phase,
+        // Reset always returns to a fresh work phase.
+        next: 'work',
+        startedAt: state.phaseStartedAt ?? now - elapsedMs,
+        endedAt: now,
+        activeDurationMs: elapsedMs,
+        completed: false,
+      }
+
+      return {
+        ...carried,
+        completions: [...state.completions, abandoned],
+        nextCompletionId: state.nextCompletionId + 1,
       }
     }
 
@@ -177,7 +219,7 @@ function reducer(state: State, action: Action): State {
       // of it the user was actually present for. Don't invent completions —
       // including for this first phase — and fall back to a clean slate.
       if (now >= finishedAt + state.config.durations[phase]) {
-        return reducer(state, { type: 'RESET' })
+        return reducer(state, { type: 'RESET', reason: 'abandonment' })
       }
 
       // Exactly one phase elapsed: the ordinary case, including a short
@@ -191,6 +233,7 @@ function reducer(state: State, action: Action): State {
           finishedAt - state.config.durations[finishedPhase],
         endedAt: finishedAt,
         activeDurationMs: state.config.durations[finishedPhase],
+        completed: true,
       }
 
       return {
@@ -211,8 +254,11 @@ function reducer(state: State, action: Action): State {
 }
 
 export interface UsePomodoroOptions {
-  /** Called once per finished phase, in order. Side effects belong here. */
-  onPhaseComplete?: (completion: Completion) => void
+  /**
+   * Called once per ended phase, in order — finished or abandoned. Side
+   * effects belong here.
+   */
+  onSessionEnded?: (completion: Completion) => void
 }
 
 export interface Pomodoro {
@@ -243,8 +289,8 @@ export function usePomodoro(
 
   // Kept in a ref so a new callback identity each render doesn't re-run the
   // drain effect (and so the effect never sees a stale closure).
-  const onPhaseComplete = useRef(options.onPhaseComplete)
-  onPhaseComplete.current = options.onPhaseComplete
+  const onSessionEnded = useRef(options.onSessionEnded)
+  onSessionEnded.current = options.onSessionEnded
 
   // Cursor into the append-only log. A ref survives StrictMode's double-invoked
   // effects, so each completion fires its side effects exactly once.
@@ -255,7 +301,7 @@ export function usePomodoro(
     if (fresh.length === 0) return
 
     processedId.current = fresh[fresh.length - 1]!.id
-    for (const completion of fresh) onPhaseComplete.current?.(completion)
+    for (const completion of fresh) onSessionEnded.current?.(completion)
   }, [state.completions])
 
   useEffect(() => {
@@ -293,7 +339,7 @@ export function usePomodoro(
     start: () => dispatch({ type: 'START' }),
     pause: () => dispatch({ type: 'PAUSE' }),
     resume: () => dispatch({ type: 'RESUME' }),
-    reset: () => dispatch({ type: 'RESET' }),
+    reset: () => dispatch({ type: 'RESET', reason: 'manual' }),
   }
 }
 

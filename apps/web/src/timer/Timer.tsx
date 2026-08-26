@@ -46,14 +46,19 @@ function TimerBody({
   const refreshTasks = tasks.refresh
   const refreshBlock = workBlock.refresh
 
-  const handlePhaseComplete = useCallback(
+  const handleSessionEnded = useCallback(
     (completion: Completion) => {
-      beep()
-      notify(completion.phase)
+      // A phase the user cut short shouldn't announce itself — they're
+      // looking at the app, and they're the one who stopped it.
+      if (completion.completed) {
+        beep()
+        notify(completion.phase)
+      }
+
       // Deliberately not awaited: persistence must never gate the transition.
       void recordSession(completion, getToken).then(() => {
         // The server attributes work sessions to the active task, so re-read
-        // to pick up the new actualMs.
+        // to pick up the new actualMs — abandoned partials count too.
         if (completion.phase === 'work') {
           void refreshTasks()
           void refreshBlock()
@@ -73,7 +78,7 @@ function TimerBody({
     pause,
     resume,
     reset,
-  } = usePomodoro(config, { onPhaseComplete: handlePhaseComplete })
+  } = usePomodoro(config, { onSessionEnded: handleSessionEnded })
 
   const isRunning = status === 'running'
   const isBreak = phase !== 'work'

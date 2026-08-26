@@ -14,16 +14,16 @@ interface ValidBody {
   startedAt: Date
   endedAt: Date
   activeDurationMs: number
+  /** False for a phase the user cut short with Reset. */
+  completed: boolean
 }
 
 /** Returns the parsed body, or a message describing why it was rejected. */
 function parseBody(body: unknown): ValidBody | string {
   if (body === null || typeof body !== 'object') return 'Body must be an object'
 
-  const { type, startedAt, endedAt, activeDurationMs } = body as Record<
-    string,
-    unknown
-  >
+  const { type, startedAt, endedAt, activeDurationMs, completed } =
+    body as Record<string, unknown>
 
   if (typeof type !== 'string' || !SESSION_TYPES.includes(type as SessionType)) {
     return `type must be one of: ${SESSION_TYPES.join(', ')}`
@@ -50,15 +50,20 @@ function parseBody(body: unknown): ValidBody | string {
     return 'activeDurationMs must be a positive integer number of milliseconds'
   }
 
+  if (typeof completed !== 'boolean') {
+    return 'completed must be a boolean'
+  }
+
   return {
     type: type as SessionType,
     startedAt: started,
     endedAt: ended,
     activeDurationMs,
+    completed,
   }
 }
 
-/** Records a completed focus or break session. */
+/** Records a finished focus or break session, completed or abandoned. */
 sessionsRouter.post('/api/sessions', async (req, res) => {
   const { userId } = getAuth(req)
 
@@ -87,7 +92,7 @@ sessionsRouter.post('/api/sessions', async (req, res) => {
         startedAt: parsed.startedAt,
         endedAt: parsed.endedAt,
         activeDurationMs: parsed.activeDurationMs,
-        completed: true,
+        completed: parsed.completed,
         // Only work counts toward a task; breaks stay unattributed. Taken
         // from the server's view of the active task, not the client's.
         taskId: parsed.type === 'work' ? user.activeTaskId : null,
