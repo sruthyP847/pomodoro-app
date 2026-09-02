@@ -73,6 +73,9 @@ model Session {
   /// Quick-Start-plus-Task sessions run outside a block.
   workBlockId String?
   workBlock   WorkBlock? @relation(fields: [workBlockId], references: [id])
+
+  /// Free-text note the user wrote right after finishing. Null when skipped.
+  reflection String?
 }
 
 /// A unit of work the user is tracking sessions against.

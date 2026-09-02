@@ -1,10 +1,11 @@
 import { useAuth } from '@clerk/clerk-react'
-import { useCallback, useMemo } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 
 import { beep, notify, primeAudio, requestNotificationPermission } from './alerts'
 import { PHASE_LABELS, planToTimerConfig, type TimerConfig } from './config'
 import { GamePlanPicker } from './GamePlanPicker'
-import { recordSession } from './sessionsApi'
+import { ReflectionCard } from './ReflectionCard'
+import { recordSession, saveReflection } from './sessionsApi'
 import { TaskPicker, type BlockScope } from './TaskPicker'
 import { useGamePlans } from './useGamePlans'
 import { useTasks } from './useTasks'
@@ -46,6 +47,11 @@ function TimerBody({
   const refreshTasks = tasks.refresh
   const refreshBlock = workBlock.refresh
 
+  // A single slot, never a queue: a newer prompt replaces an unanswered one.
+  const [reflectingSessionId, setReflectingSessionId] = useState<string | null>(
+    null,
+  )
+
   const handleSessionEnded = useCallback(
     (completion: Completion) => {
       // A phase the user cut short shouldn't announce itself — they're
@@ -55,13 +61,19 @@ function TimerBody({
         notify(completion.phase)
       }
 
-      // Deliberately not awaited: persistence must never gate the transition.
-      void recordSession(completion, getToken).then(() => {
+      // Deliberately not awaited: persistence must never gate the transition,
+      // and neither does the prompt — the next phase is already running.
+      void recordSession(completion, getToken).then((saved) => {
         // The server attributes work sessions to the active task, so re-read
         // to pick up the new actualMs — abandoned partials count too.
         if (completion.phase === 'work') {
           void refreshTasks()
           void refreshBlock()
+        }
+
+        // Only a work phase the user actually finished earns a prompt.
+        if (saved && completion.phase === 'work' && completion.completed) {
+          setReflectingSessionId(saved.id)
         }
       })
     },
@@ -187,6 +199,19 @@ function TimerBody({
           Reset
         </button>
       </div>
+
+      {reflectingSessionId && (
+        <ReflectionCard
+          // Remounts on a new session so the previous draft never carries over.
+          key={reflectingSessionId}
+          onSave={(text) => {
+            const sessionId = reflectingSessionId
+            setReflectingSessionId(null)
+            void saveReflection(sessionId, text, getToken)
+          }}
+          onSkip={() => setReflectingSessionId(null)}
+        />
+      )}
 
       <ol
         className="timer__dots"

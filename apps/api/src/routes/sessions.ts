@@ -112,3 +112,51 @@ sessionsRouter.post('/api/sessions', async (req, res) => {
     res.status(500).json({ error: 'Failed to record session' })
   }
 })
+
+/** Attaches (or replaces) the free-text note for one finished session. */
+sessionsRouter.patch('/api/sessions/:id/reflection', async (req, res) => {
+  const { userId } = getAuth(req)
+
+  if (!userId) {
+    res.status(401).json({ error: 'Unauthorized' })
+    return
+  }
+
+  const body = (req.body ?? {}) as Record<string, unknown>
+  const reflection = body['reflection']
+
+  if (typeof reflection !== 'string' || reflection.trim() === '') {
+    // A Skip should not call this route at all rather than send empty text.
+    res.status(400).json({
+      error: 'reflection must be a non-empty string',
+    })
+    return
+  }
+
+  try {
+    const { user } = await resolveUser(userId)
+    const { id } = req.params
+
+    const existing = await prisma.session.findUnique({ where: { id } })
+    // Same response whether it's missing or someone else's — don't leak which.
+    if (!existing || existing.userId !== user.id) {
+      res.status(404).json({ error: 'Session not found' })
+      return
+    }
+
+    const session = await prisma.session.update({
+      where: { id },
+      data: { reflection: reflection.trim() },
+    })
+
+    res.json(session)
+  } catch (error) {
+    if (error instanceof MissingEmailError) {
+      res.status(422).json({ error: error.message })
+      return
+    }
+
+    console.error('[PATCH /api/sessions/:id/reflection] failed:', error)
+    res.status(500).json({ error: 'Failed to save reflection' })
+  }
+})

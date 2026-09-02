@@ -956,3 +956,94 @@
   opacity: 0.35;
   cursor: not-allowed;
 }
+
+/* --- Post-session reflection ------------------------------------------ */
+
+/* Floats over the page so the break countdown stays visible and running. */
+.reflection {
+  position: fixed;
+  right: 1.25rem;
+  bottom: 1.25rem;
+  z-index: 20;
+  width: min(20rem, calc(100vw - 2.5rem));
+  padding: 0.9rem 1rem;
+  border: 1px solid color-mix(in srgb, var(--text) 22%, transparent);
+  border-radius: 0.85rem;
+  background: var(--bg);
+  box-shadow: 0 16px 40px rgb(0 0 0 / 0.35);
+  text-align: left;
+}
+
+.reflection__close {
+  position: absolute;
+  top: 0.45rem;
+  right: 0.45rem;
+  display: grid;
+  place-items: center;
+  width: 1.6rem;
+  height: 1.6rem;
+  padding: 0;
+  border: none;
+  border-radius: 0.4rem;
+  background: transparent;
+  color: var(--text);
+  opacity: 0.6;
+  cursor: pointer;
+}
+
+.reflection__close svg {
+  width: 0.9rem;
+  height: 0.9rem;
+}
+
+.reflection__close:hover {
+  opacity: 1;
+  background: color-mix(in srgb, var(--text) 12%, transparent);
+}
+
+.reflection__prompt {
+  margin: 0 1.5rem 0.6rem 0;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text-h);
+}
+
+.reflection__form {
+  display: flex;
+  gap: 0.4rem;
+}
+
+.reflection__input {
+  flex: 1;
+  min-width: 0;
+  padding: 0.4rem 0.55rem;
+  border: 1px solid color-mix(in srgb, var(--text) 25%, transparent);
+  border-radius: 0.4rem;
+  background: transparent;
+  color: var(--text-h);
+  font: inherit;
+  font-size: 0.85rem;
+}
+
+.reflection__input:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.reflection__save {
+  flex: none;
+  padding: 0.4rem 0.9rem;
+  border: none;
+  border-radius: 999px;
+  color: var(--accent-contrast);
+  background: var(--accent);
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.reflection__save:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
