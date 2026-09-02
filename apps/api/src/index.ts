@@ -1,6 +1,7 @@
 import { clerkMiddleware } from '@clerk/express'
 import express from 'express'
 
+import { dashboardRouter } from './routes/dashboard.js'
 import { gamePlansRouter } from './routes/gamePlans.js'
 import { healthRouter } from './routes/health.js'
 import { meRouter } from './routes/me.js'
@@ -46,6 +47,7 @@ app.use(sessionsRouter)
 app.use(gamePlansRouter)
 app.use(tasksRouter)
 app.use(workBlocksRouter)
+app.use(dashboardRouter)
 
 app.listen(port, () => {
   console.log(`api listening on http://localhost:${port}`)

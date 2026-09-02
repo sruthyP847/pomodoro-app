@@ -1,0 +1,180 @@
+.dash {
+  flex: 1;
+  width: min(46rem, 100%);
+  margin: 0 auto;
+  padding: 2rem 1.5rem 3rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.dash--message {
+  align-items: center;
+  justify-content: center;
+  color: var(--text);
+}
+
+.dash__title {
+  margin: 0;
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: var(--text-h);
+}
+
+.dash__cards {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.statcard {
+  padding: 1.1rem 1.25rem;
+  border: 1px solid color-mix(in srgb, var(--text) 20%, transparent);
+  border-radius: 0.9rem;
+  background: color-mix(in srgb, var(--text) 6%, transparent);
+}
+
+.statcard__label {
+  margin: 0 0 0.4rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  opacity: 0.7;
+}
+
+.statcard__value {
+  margin: 0;
+  font-size: 2rem;
+  font-weight: 700;
+  line-height: 1.1;
+  color: var(--text-h);
+  font-variant-numeric: tabular-nums;
+}
+
+.statcard__sub {
+  margin: 0.35rem 0 0;
+  font-size: 0.75rem;
+  opacity: 0.6;
+}
+
+.chart {
+  padding: 1rem 1.25rem 0.75rem;
+  border: 1px solid color-mix(in srgb, var(--text) 20%, transparent);
+  border-radius: 0.9rem;
+}
+
+.chart__bars {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 0.5rem;
+  align-items: end;
+}
+
+.chart__col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.4rem;
+  min-width: 0;
+}
+
+.chart__track {
+  width: 100%;
+  height: 8rem;
+  display: flex;
+  align-items: flex-end;
+}
+
+.chart__bar {
+  width: 100%;
+  /* Keeps a sliver visible for a very small non-zero day... */
+  min-height: 2px;
+  border-radius: 0.3rem 0.3rem 0 0;
+  background: var(--accent);
+  transition: height 200ms ease;
+}
+
+/* ...but a day with nothing logged should read as genuinely empty. */
+.chart__bar[data-ms='0'] {
+  min-height: 0;
+}
+
+.chart__label {
+  font-size: 0.72rem;
+  opacity: 0.65;
+}
+
+.callout {
+  margin: 0;
+  padding: 0.75rem 1rem;
+  border-radius: 0.7rem;
+  font-size: 0.9rem;
+  color: var(--text-h);
+  background: color-mix(in srgb, var(--accent) 14%, transparent);
+  border: 1px solid color-mix(in srgb, var(--accent) 30%, transparent);
+}
+
+.toptasks__title {
+  margin: 0 0 0.6rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  opacity: 0.7;
+}
+
+.toptasks__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+/* Mirrors the task-list row styling, minus the icons — nothing here is editable. */
+.toptasks__item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.45rem 0.5rem;
+  border-radius: 0.5rem;
+  font-size: 0.85rem;
+}
+
+.toptasks__item:hover {
+  background: color-mix(in srgb, var(--text) 8%, transparent);
+}
+
+.toptasks__name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 600;
+  color: var(--text-h);
+}
+
+.toptasks__meta {
+  flex: none;
+  font-size: 0.78rem;
+  opacity: 0.65;
+  font-variant-numeric: tabular-nums;
+}
+
+.toptasks__empty {
+  margin: 0;
+  font-size: 0.85rem;
+  opacity: 0.6;
+}
+
+@media (max-width: 30rem) {
+  .dash__cards {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

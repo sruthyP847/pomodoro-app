@@ -25,3 +25,42 @@
   place-items: center;
   padding: 2rem;
 }
+
+/* Header view switch */
+.viewnav {
+  margin-left: auto;
+  margin-right: 0.75rem;
+  display: flex;
+  align-items: center;
+  gap: 0.15rem;
+}
+
+.viewnav__button {
+  display: grid;
+  place-items: center;
+  width: 2rem;
+  height: 2rem;
+  padding: 0;
+  border: none;
+  border-radius: 0.5rem;
+  background: transparent;
+  color: var(--text);
+  opacity: 0.55;
+  cursor: pointer;
+}
+
+.viewnav__button svg {
+  width: 1.15rem;
+  height: 1.15rem;
+}
+
+.viewnav__button:hover {
+  opacity: 0.85;
+  background: color-mix(in srgb, var(--text) 10%, transparent);
+}
+
+/* The current view reads as accent-coloured; the other stays muted. */
+.viewnav__button[data-active='true'] {
+  color: var(--accent);
+  opacity: 1;
+}
